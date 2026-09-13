@@ -49,8 +49,11 @@ function Write-LocalAIJsonAtomic {
         $json=$Value | ConvertTo-Json -Depth 50
         [IO.File]::WriteAllText($temp,$json,$encoding)
         [void](Get-Content -LiteralPath $temp -Raw | ConvertFrom-Json -ErrorAction Stop)
-        if (Test-Path -LiteralPath $Path -PathType Leaf) { [IO.File]::Replace($temp,$Path,$null) }
-        else { [IO.File]::Move($temp,$Path) }
+        if (Test-Path -LiteralPath $Path -PathType Leaf) {
+            $replacementBackup=Join-Path $parent ((Split-Path -Leaf $Path)+'.replace-'+[guid]::NewGuid().ToString('N')+'.bak')
+            try { [IO.File]::Replace($temp,$Path,$replacementBackup) }
+            finally { if(Test-Path -LiteralPath $replacementBackup){Remove-Item -LiteralPath $replacementBackup -Force -ErrorAction SilentlyContinue} }
+        } else { [IO.File]::Move($temp,$Path) }
     } finally {
         if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue }
     }

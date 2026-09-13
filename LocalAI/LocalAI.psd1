@@ -10,7 +10,9 @@
     NestedModules=@(
         'Modules\Common.psm1',
         'Modules\Configuration.psm1',
-        'Modules\Gguf.psm1'
+        'Modules\Gguf.psm1',
+        'Modules\Hardware.psm1',
+        'Modules\Discovery.psm1'
     )
     FunctionsToExport='*'
     CmdletsToExport=@()

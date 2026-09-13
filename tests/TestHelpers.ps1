@@ -100,3 +100,23 @@ function New-MalformedTestGguf {
     } finally {$writer.Dispose();$stream.Dispose()}
     return $path
 }
+
+function New-TestShardSet {
+    param([string]$Root,[string]$Stem='model',[int]$Count=3)
+    if(-not(Test-Path -LiteralPath $Root)){[void](New-Item -ItemType Directory -Path $Root -Force)}
+    $paths=@()
+    for($i=1;$i -le $Count;$i++){
+        $path=Join-Path $Root ('{0}-{1:D5}-of-{2:D5}.gguf' -f $Stem,$i,$Count)
+        $metadata=[ordered]@{
+            'general.architecture'='futuremoe'
+            'general.name'='Future MoE'
+            'futuremoe.context_length'=[uint32]65536
+            'futuremoe.expert_count'=[uint32]64
+            'futuremoe.expert_used_count'=[uint32]4
+            'tokenizer.chat_template'='{{ messages }}'
+        }
+        $null=New-TestGguf -Path $path -Metadata $metadata
+        $paths+=$path
+    }
+    return $paths
+}
