@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.1 - 2026-09-13
+
+- Reapply an eligible benchmark winner only when its machine, llama.cpp build, model fingerprint, and task intent match exactly; explicit user tuning still takes precedence.
+- Preserve every candidate's tuning fields alongside raw benchmark evidence so a winner is reproducible.
+- Make `Statistics -Live` a real continuously refreshing terminal view until interrupted.
+
 ## 4.0.0 - 2026-09-13
 
 - Replaced the hardcoded model registry as the primary source with automatic GGUF discovery and direct metadata inspection.

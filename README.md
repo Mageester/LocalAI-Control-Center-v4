@@ -70,7 +70,7 @@ Benchmarking is opt-in because it repeatedly loads the model:
 .\local-ai.cmd -Command Benchmark -Model <model-id> -Profile CodingFast -Confirm
 ```
 
-Results are recorded by machine fingerprint, model fingerprint, and intent. Failed or incomplete candidates are not promoted.
+Results are recorded by machine fingerprint, llama.cpp build, model fingerprint, and intent. An eligible winner is automatically reused on later plans for that exact combination; explicit user tuning still wins. Failed or incomplete candidates are not promoted.
 
 ## Models and downloads
 

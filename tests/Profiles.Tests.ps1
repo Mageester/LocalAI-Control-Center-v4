@@ -36,6 +36,16 @@ Invoke-TestCase 'client policy derives context and compaction thresholds from on
     Assert-Equal 98304 $p.AutoCompactThreshold
 }
 
+Invoke-TestCase 'explicit tuning takes precedence over applicable benchmark tuning' {
+    Import-TestModule Profiles
+    $model=New-ProfileTestModel -NativeContext 131072
+    $plan=New-LocalAILaunchPlan -Model $model -Machine (New-ProfileTestMachine) -Intent Auto -BenchmarkOverrides @{Context=32768;KV='q4_0'} -Overrides @{Context=65536}
+    Assert-Equal 65536 $plan.Context
+    Assert-Equal 'q4_0' $plan.KV
+    Assert-Equal 'explicit' $plan.Provenance.Context
+    Assert-Equal 'benchmark' $plan.Provenance.KV
+}
+
 Invoke-TestCase 'launch plan rejects a server flag missing from capabilities' {
     Import-TestModule Profiles
     $plan=[pscustomobject]@{Context=4096;NativeContext=4096;Arguments=@('--model','x','--future-flag');ModelPath='x';HasChatTemplate=$true}

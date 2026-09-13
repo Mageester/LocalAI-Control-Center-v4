@@ -72,6 +72,7 @@ function New-LocalAILaunchPlan {
         [Parameter(Mandatory)]$Model,
         [Parameter(Mandatory)]$Machine,
         [Parameter(Mandatory)][ValidateSet('Auto','CodingQuality','CodingFast','AgentLong','General','DeepReasoning','LongContext','Vision','Expert')][string]$Intent,
+        [hashtable]$BenchmarkOverrides=@{},
         [hashtable]$Overrides=@{},
         $ServerCapabilities=$null,
         [ValidateRange(1,65535)][int]$Port=8080,
@@ -91,8 +92,12 @@ function New-LocalAILaunchPlan {
     $safe=Get-LocalAISafeProfile -Model $Model -Machine $Machine -Intent $Intent
     $context=[long]$safe.Context;$kv=[string]$safe.KV;$batch=[int]$safe.Batch;$ubatch=[int]$safe.UBatch
     $fit=[int]$safe.FitTargetMiB;$threads=[int]$safe.Threads;$threadsBatch=[int]$safe.ThreadsBatch
-    foreach($pair in @(@('Context','context'),@('KV','kv'),@('Batch','batch'),@('UBatch','ubatch'),@('FitTargetMiB','fit'),@('Threads','threads'),@('ThreadsBatch','threadsBatch'))){
-        if($Overrides.ContainsKey($pair[0])){Set-Variable -Name $pair[1] -Value $Overrides[$pair[0]]}
+    $sources=@{Context='derived';KV='derived';Batch='derived';UBatch='derived';FitTargetMiB='derived';Threads='derived';ThreadsBatch='derived'}
+    $pairs=@(@('Context','context'),@('KV','kv'),@('Batch','batch'),@('UBatch','ubatch'),@('FitTargetMiB','fit'),@('Threads','threads'),@('ThreadsBatch','threadsBatch'))
+    foreach($layer in @(@{Values=$BenchmarkOverrides;Source='benchmark'},@{Values=$Overrides;Source='explicit'})){
+        foreach($pair in $pairs){
+            if($layer.Values.ContainsKey($pair[0])){Set-Variable -Name $pair[1] -Value $layer.Values[$pair[0]];$sources[$pair[0]]=$layer.Source}
+        }
     }
     if($context -gt [long]$Model.NativeContext){throw "Requested context $context exceeds GGUF native context $($Model.NativeContext)."}
     if($context -lt 512){throw 'Context must be at least 512 tokens.'}
@@ -132,7 +137,7 @@ function New-LocalAILaunchPlan {
         Vision=if($projector){$visionMode}else{'Off'};HasChatTemplate=[bool]$Model.HasChatTemplate
         Port=$Port;ServerBaseUrl="http://127.0.0.1:$Port";OpenAIBaseUrl="http://127.0.0.1:$Port/v1";HealthUrl="http://127.0.0.1:$Port/health"
         LogPath=$LogPath;ClientPolicy=$client;Arguments=[string[]]$args
-        Provenance=[pscustomobject]@{Context=if($Overrides.ContainsKey('Context')){'explicit'}else{'derived'};KV=if($Overrides.ContainsKey('KV')){'explicit'}else{'derived'};Intent=$Intent}
+        Provenance=[pscustomobject]@{Context=$sources.Context;KV=$sources.KV;Batch=$sources.Batch;UBatch=$sources.UBatch;FitTargetMiB=$sources.FitTargetMiB;Threads=$sources.Threads;ThreadsBatch=$sources.ThreadsBatch;Intent=$Intent}
     }
     $null=Test-LocalAILaunchPlan -Plan $plan -ServerCapabilities $ServerCapabilities
     return $plan

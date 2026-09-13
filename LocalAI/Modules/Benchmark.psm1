@@ -29,6 +29,9 @@ function Invoke-LocalAIBenchmark {
             if(-not$value.PSObject.Properties['Succeeded']){$value|Add-Member NoteProperty Succeeded $true}
             if(-not$value.PSObject.Properties['Stable']){$value|Add-Member NoteProperty Stable $true}
             if(-not$value.PSObject.Properties['Error']){$value|Add-Member NoteProperty Error ''}
+            foreach($name in @('Context','KV','Batch','UBatch','Threads','ThreadsBatch','FitTargetMiB','Mtp')){
+                if(-not$value.PSObject.Properties[$name] -and $candidate.PSObject.Properties[$name]){$value|Add-Member NoteProperty $name $candidate.$name}
+            }
             $value|Add-Member NoteProperty DurationSeconds ([math]::Round(((Get-Date)-$started).TotalSeconds,3)) -Force
             $results.Add($value)
         }catch{
@@ -55,6 +58,17 @@ function Get-LocalAIApplicableBenchmark {
     param([Parameter(Mandatory)]$Store,[Parameter(Mandatory)][string]$MachineFingerprint,[Parameter(Mandatory)][string]$ModelFingerprint,[Parameter(Mandatory)][string]$Intent)
     $records=if($Store -is [array]){$Store}elseif($Store.PSObject.Properties['records']){@($Store.records)}else{@($Store)}
     return @($records|Where-Object{$_.MachineFingerprint -ceq $MachineFingerprint -and $_.ModelFingerprint -ceq $ModelFingerprint -and $_.Intent -ceq $Intent}|Select-Object -First 1)
+}
+
+function Get-LocalAIBenchmarkPlanOverrides {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Winner)
+    $overrides=@{}
+    foreach($name in @('Context','KV','Batch','UBatch','Threads','ThreadsBatch','FitTargetMiB')){
+        if($Winner.PSObject.Properties[$name] -and $null -ne $Winner.$name){$overrides[$name]=$Winner.$name}
+    }
+    if($overrides.Count -eq 0){throw 'Benchmark winner contains no reusable tuning fields.'}
+    return $overrides
 }
 
 function Save-LocalAIBenchmarkRecord {

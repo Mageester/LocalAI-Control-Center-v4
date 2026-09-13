@@ -47,3 +47,18 @@ Invoke-TestCase 'Harness preview derives alias and context without editing confi
     Assert-Equal 32768 $config.Context
     Assert-True (-not(Test-Path -LiteralPath $config.Path))
 }
+
+Invoke-TestCase 'Plan reuses an applicable stored machine and model benchmark' {
+    $root=Join-Path $script:TestRoot 'benchmark-plan';$state=Join-Path $script:TestRoot 'benchmark-plan-state'
+    $modelPath=New-TestGguf -Path (Join-Path $root 'benchmarked.gguf')
+    $initial=(Invoke-LocalAIControllerForTest @('-Command','Plan','-Model',$modelPath,'-InstallRoot',$script:TestRoot,'-StateRoot',$state,'-ModelRoot',$root,'-NoDefaultModelRoots','-Profile','Auto','-DryRun','-Json')|ConvertFrom-Json)
+    Import-TestModule Common;Import-TestModule Configuration;Import-TestModule Hardware
+    $paths=Get-LocalAIPaths -InstallRoot $script:TestRoot -StateRoot $state
+    $machine=Get-LocalAIMachine -LlamaRoot $script:TestRoot
+    $record=[pscustomobject]@{MachineFingerprint=Get-LocalAIMachineFingerprint $machine;ModelFingerprint=$initial.ModelFingerprint;Intent='Auto';Winner=[pscustomobject]@{Context=16384;KV='q4_0';Batch=1024;UBatch=256;Threads=8;ThreadsBatch=16;FitTargetMiB=1536}}
+    $null=Write-LocalAIJsonAtomic -Path $paths.Benchmarks -Value ([pscustomobject]@{schemaVersion=1;records=@($record)})
+    $applied=(Invoke-LocalAIControllerForTest @('-Command','Plan','-Model',$modelPath,'-InstallRoot',$script:TestRoot,'-StateRoot',$state,'-ModelRoot',$root,'-NoDefaultModelRoots','-Profile','Auto','-DryRun','-Json')|ConvertFrom-Json)
+    Assert-Equal 16384 $applied.Context
+    Assert-Equal 'q4_0' $applied.KV
+    Assert-Equal 'benchmark' $applied.Provenance.Context
+}

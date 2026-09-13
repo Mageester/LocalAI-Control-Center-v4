@@ -28,3 +28,12 @@ Invoke-TestCase 'offline Doctor skips live server checks' {
     $r=@(Invoke-LocalAIDoctor -Context $context)
     Assert-Equal 'Skipped' (@($r|Where-Object Code -eq 'SERVER_LIVE')[0].Status)
 }
+
+Invoke-TestCase 'live statistics emits repeated independent samples' {
+    Import-TestModule Diagnostics
+    $samples=New-Object Collections.Generic.List[object]
+    $context=[pscustomobject]@{NvidiaProbe={throw 'not installed'};MemoryProbe={[pscustomobject]@{TotalBytes=32GB;FreeBytes=16GB}};ActiveState=$null}
+    Watch-LocalAIStatistics -Context $context -SampleCount 3 -IntervalSeconds 1 -Writer {$samples.Add($args[0])} -Sleeper {param($seconds)}
+    Assert-Equal 3 $samples.Count
+    Assert-Equal 'Unavailable' $samples[2].Gpu.Status
+}

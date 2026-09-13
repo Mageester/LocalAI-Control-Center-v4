@@ -45,6 +45,24 @@ function Get-LocalAIStatistics {
     }
 }
 
+function Watch-LocalAIStatistics {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$Context,
+        [ValidateRange(0,2147483647)][int]$SampleCount=0,
+        [ValidateRange(1,3600)][int]$IntervalSeconds=2,
+        [scriptblock]$Writer={param($sample) $sample|Format-List|Out-Host},
+        [scriptblock]$Sleeper={param($seconds) Start-Sleep -Seconds $seconds}
+    )
+    $taken=0
+    while($SampleCount -eq 0 -or $taken -lt $SampleCount){
+        $sample=Get-LocalAIStatistics -Context $Context
+        & $Writer $sample
+        $taken++
+        if($SampleCount -eq 0 -or $taken -lt $SampleCount){& $Sleeper $IntervalSeconds}
+    }
+}
+
 function Invoke-LocalAIDoctor {
     [CmdletBinding()]
     param([Parameter(Mandatory)]$Context,[switch]$Live)

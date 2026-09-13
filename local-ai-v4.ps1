@@ -92,6 +92,12 @@ function New-ControllerPlan {
     param([string]$Selection,[string]$Intent)
     $selected=Select-ControllerModel -Models @(Get-ControllerModels) -Selection $Selection
     $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+    $benchmarkOverrides=@{}
+    if(Test-Path -LiteralPath $script:Paths.Benchmarks -PathType Leaf){
+        $store=Read-LocalAIJson -Path $script:Paths.Benchmarks
+        $record=@(Get-LocalAIApplicableBenchmark -Store $store -MachineFingerprint (Get-LocalAIMachineFingerprint $machine) -ModelFingerprint $selected.Fingerprint -Intent $Intent|Select-Object -First 1)
+        if($record.Count -eq 1){$benchmarkOverrides=Get-LocalAIBenchmarkPlanOverrides -Winner $record[0].Winner}
+    }
     $server=Join-Path $InstallRoot 'llama-server.exe'
     $capabilities=$null
     if(Test-Path -LiteralPath $server -PathType Leaf) {
@@ -102,7 +108,7 @@ function New-ControllerPlan {
     if($Context -gt 0) { $explicit.Context=$Context }
     if($KV) { $explicit.KV=$KV }
     $log=Join-Path $script:Paths.Logs ((Get-Date -Format 'yyyyMMdd-HHmmss-fff')+'-'+$selected.Id+'.log')
-    return New-LocalAILaunchPlan -Model $selected -Machine $machine -Intent $Intent -Overrides $explicit -ServerCapabilities $capabilities -Port $Port -LogPath $log
+    return New-LocalAILaunchPlan -Model $selected -Machine $machine -Intent $Intent -BenchmarkOverrides $benchmarkOverrides -Overrides $explicit -ServerCapabilities $capabilities -Port $Port -LogPath $log
 }
 
 function Invoke-ControllerLaunch {
@@ -190,7 +196,17 @@ function Invoke-ControllerCommand {
             if($HarnessAction -eq 'Launch'){$project=if($ProjectDir){$ProjectDir}else{(Get-Location).Path};Start-LocalAIHarness -Adapter $adapter -Configuration $configuration -ProjectDirectory $project}
             return $applied
         }
-        'Statistics' { $active=if(Test-Path -LiteralPath $script:Paths.Active){Read-LocalAIJson -Path $script:Paths.Active}else{$null};return Get-LocalAIStatistics -Context ([pscustomobject]@{ActiveState=$active}) }
+        'Statistics' {
+            $active=if(Test-Path -LiteralPath $script:Paths.Active){Read-LocalAIJson -Path $script:Paths.Active}else{$null}
+            $statisticsContext=[pscustomobject]@{ActiveState=$active}
+            if($Live){
+                if($Json){throw 'Live statistics is an interactive stream and cannot be combined with -Json.'}
+                Write-Host 'Live statistics - press Ctrl+C to stop.' -ForegroundColor Cyan
+                Watch-LocalAIStatistics -Context $statisticsContext -IntervalSeconds ([int](Get-ControllerSettings).refreshSeconds) -Writer {param($sample) Clear-Host;Write-Host 'LOCAL AI LIVE STATISTICS - press Ctrl+C to stop' -ForegroundColor Cyan;$sample|Format-List|Out-Host}
+                return
+            }
+            return Get-LocalAIStatistics -Context $statisticsContext
+        }
         'Doctor' { return Invoke-ControllerDoctor }
         'Download' {
             $plan=if($Reference){ConvertFrom-LocalAIHuggingFaceReference -Reference $Reference}else{New-LocalAIDownloadPlan -Repository $Repository -FileName $FileName -Revision $Revision -Destination $Destination}
@@ -228,7 +244,7 @@ function Invoke-ControllerCommand {
             $policy=Get-LocalAIClientPolicy -Context 131072;if($policy.AutoCompactThreshold -ne 98304){throw 'Client policy invariant failed.'};$checks++
             $adapters=@(Get-ControllerAdapters);if($adapters.Count -ne 5){throw 'Shipped adapter count invariant failed.'};$checks++
             foreach($adapter in $adapters){$null=Test-LocalAIHarnessAdapter -Adapter $adapter;$checks++}
-            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.0'}
+            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.1'}
         }
         default { throw "Unsupported command '$Name'." }
     }

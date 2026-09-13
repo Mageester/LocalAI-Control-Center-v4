@@ -44,3 +44,21 @@ Invoke-TestCase 'failed candidates are retained as negative evidence' {
     Assert-Equal $false $results[0].Succeeded
     Assert-True ($results[0].Error -match 'out of memory')
 }
+
+Invoke-TestCase 'benchmark result retains the exact candidate tuning fields' {
+    Import-TestModule Benchmark
+    $candidate=(New-LocalAIBenchmarkMatrix -BasePlan (New-BenchmarkTestPlan) -Intent CodingFast)[0]
+    $result=@(Invoke-LocalAIBenchmark -Candidates @($candidate) -Runner {param($c) New-BenchmarkTestResult -Id $c.CandidateId -Tps 20})[0]
+    Assert-Equal $candidate.Context $result.Context
+    Assert-Equal $candidate.KV $result.KV
+    Assert-Equal $candidate.UBatch $result.UBatch
+}
+
+Invoke-TestCase 'applicable benchmark winner converts to launch overrides' {
+    Import-TestModule Benchmark
+    $winner=[pscustomobject]@{Context=32768;KV='q4_0';Batch=1024;UBatch=256;Threads=8;ThreadsBatch=16;FitTargetMiB=1536}
+    $overrides=Get-LocalAIBenchmarkPlanOverrides -Winner $winner
+    Assert-Equal 32768 $overrides.Context
+    Assert-Equal 'q4_0' $overrides.KV
+    Assert-Equal 256 $overrides.UBatch
+}

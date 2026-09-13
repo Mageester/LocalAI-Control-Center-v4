@@ -4,8 +4,8 @@ Verified on 2026-09-13 using Windows 11, Windows PowerShell 5.1.26100.9539, llam
 
 ## Fresh automated verification
 
-- PowerShell parser: **35 files passed**, zero parse errors.
-- Offline test suite: **57 passed, 0 failed**.
+- PowerShell parser: **33 tracked files passed**, zero parse errors.
+- Offline test suite: **62 passed, 0 failed**.
 - `local-ai.cmd` entry point: returned parseable JSON and `passed: true` from eight self-test invariants.
 - Git whitespace validation: passed.
 - Secret/path scan: no credentials or user-specific absolute source paths found in tracked v4 files.
