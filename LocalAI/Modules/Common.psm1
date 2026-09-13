@@ -85,6 +85,24 @@ function Get-LocalAIHash {
     finally { $sha.Dispose() }
 }
 
+function Write-LocalAITextAtomic {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Path,[Parameter(Mandatory)][AllowEmptyString()][string]$Content)
+    $parent=Split-Path -Parent $Path
+    if(-not(Test-Path -LiteralPath $parent -PathType Container)){[void](New-Item -ItemType Directory -Path $parent -Force)}
+    $temp=Join-Path $parent ((Split-Path -Leaf $Path)+'.'+[guid]::NewGuid().ToString('N')+'.tmp')
+    $backup=Join-Path $parent ((Split-Path -Leaf $Path)+'.'+[guid]::NewGuid().ToString('N')+'.replace')
+    $encoding=New-Object Text.UTF8Encoding($false)
+    try{
+        [IO.File]::WriteAllText($temp,$Content,$encoding)
+        if(Test-Path -LiteralPath $Path -PathType Leaf){[IO.File]::Replace($temp,$Path,$backup)}else{[IO.File]::Move($temp,$Path)}
+    }finally{
+        if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue}
+        if(Test-Path -LiteralPath $backup){Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue}
+    }
+    return $Path
+}
+
 function ConvertTo-LocalAIWindowsArgument {
     [CmdletBinding()]
     param([AllowEmptyString()][string]$Value)

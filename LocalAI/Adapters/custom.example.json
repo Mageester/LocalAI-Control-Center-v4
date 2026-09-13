@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"custom","displayName":"Custom OpenAI-compatible harness","executableCandidates":["custom.exe"],"versionArguments":["--version"],"configurationStrategy":"Environment","install":{"mode":"guidance","executable":"","arguments":[],"guidanceUrl":"https://example.invalid/replace-with-official-docs"},"launchArguments":[]}

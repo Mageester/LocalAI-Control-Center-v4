@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"opencode","displayName":"OpenCode","executableCandidates":["opencode.cmd","opencode.exe","opencode"],"versionArguments":["--version"],"configurationStrategy":"OpenCodeJson","install":{"mode":"command","executable":"npm.cmd","arguments":["install","-g","@opencode/cli"],"guidanceUrl":"https://opencode.ai/v2/docs"},"launchArguments":[]}

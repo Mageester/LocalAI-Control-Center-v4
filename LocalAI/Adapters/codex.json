@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"codex","displayName":"OpenAI Codex CLI","executableCandidates":["codex.exe","codex.cmd","codex"],"versionArguments":["--version"],"configurationStrategy":"CodexToml","install":{"mode":"command","executable":"npm.cmd","arguments":["install","-g","@openai/codex"],"guidanceUrl":"https://github.com/openai/codex"},"launchArguments":[]}

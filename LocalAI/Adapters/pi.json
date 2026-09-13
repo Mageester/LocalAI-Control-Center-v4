@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"pi","displayName":"Pi Coding Agent","executableCandidates":["pi.cmd","pi.exe","pi"],"versionArguments":["--version"],"configurationStrategy":"PiJson","install":{"mode":"command","executable":"npm.cmd","arguments":["install","-g","@mariozechner/pi-coding-agent"],"guidanceUrl":"https://github.com/brahdian/pi_coding_agent"},"launchArguments":[]}

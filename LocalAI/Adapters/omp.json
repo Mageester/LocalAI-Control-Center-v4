@@ -1,0 +1,1 @@
+{"schemaVersion":1,"id":"omp","displayName":"OMP (Oh My Pi)","executableCandidates":["omp.exe","omp.cmd","omp"],"versionArguments":["--version"],"configurationStrategy":"OmpYaml","install":{"mode":"command","executable":"bun.exe","arguments":["install","-g","@oh-my-pi/pi-coding-agent"],"guidanceUrl":"https://omp.sh/"},"launchArguments":[]}
