@@ -18,7 +18,8 @@
         'Modules\Harnesses.psm1',
         'Modules\Downloads.psm1',
         'Modules\Benchmark.psm1',
-        'Modules\Diagnostics.psm1'
+        'Modules\Diagnostics.psm1',
+        'Modules\UI.psm1'
     )
     FunctionsToExport='*'
     CmdletsToExport=@()
