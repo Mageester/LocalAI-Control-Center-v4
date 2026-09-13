@@ -1,0 +1,2 @@
+# The v3 reference is an integrity artifact. Never normalize its bytes.
+reference/local-ai-v3.ps1 -text
