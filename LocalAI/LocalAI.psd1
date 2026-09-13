@@ -12,7 +12,8 @@
         'Modules\Configuration.psm1',
         'Modules\Gguf.psm1',
         'Modules\Hardware.psm1',
-        'Modules\Discovery.psm1'
+        'Modules\Discovery.psm1',
+        'Modules\Profiles.psm1'
     )
     FunctionsToExport='*'
     CmdletsToExport=@()
