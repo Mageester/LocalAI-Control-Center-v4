@@ -33,14 +33,19 @@ function Test-LocalAIServerArguments {
 
 function Get-LocalAIServerCapabilities {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$Executable,[string]$CachePath='')
+    param([Parameter(Mandatory)][string]$Executable,[string]$CachePath='',[scriptblock]$Runner=$null)
     if(-not(Test-Path -LiteralPath $Executable -PathType Leaf)){throw "llama-server is missing: $Executable"}
-    $version=Invoke-LocalAIProcessCapture -Executable $Executable -Arguments @('--version')
-    $help=Invoke-LocalAIProcessCapture -Executable $Executable -Arguments @('--help')
+    $executableItem=Get-Item -LiteralPath $Executable
+    $stamp=Get-LocalAIHash -Text ('{0}|{1}|{2}' -f $executableItem.FullName,$executableItem.Length,$executableItem.LastWriteTimeUtc.Ticks)
+    if($CachePath -and (Test-Path -LiteralPath $CachePath -PathType Leaf)){
+        try{$cached=Read-LocalAIJson -Path $CachePath;if([int]$cached.SchemaVersion -eq 2 -and [string]$cached.ExecutableStamp -ceq $stamp){return $cached}}catch{}
+    }
+    $version=if($Runner){& $Runner $Executable @('--version')}else{Invoke-LocalAIProcessCapture -Executable $Executable -Arguments @('--version')}
+    $help=if($Runner){& $Runner $Executable @('--help')}else{Invoke-LocalAIProcessCapture -Executable $Executable -Arguments @('--help')}
     if($help.ExitCode -ne 0){throw "llama-server --help failed: $($help.StdErr)"}
     $text=$version.StdOut+"`n"+$version.StdErr
     $match=[regex]::Match($text,'(?im)version:\s*(\d+)')
-    $value=[pscustomobject]@{SchemaVersion=1;Executable=(Get-Item -LiteralPath $Executable).FullName;Build=if($match.Success){$match.Groups[1].Value}else{''};SupportedFlags=Get-LocalAIServerFlagsFromHelp ($help.StdOut+"`n"+$help.StdErr);UpdatedAt=(Get-Date).ToString('o')}
+    $value=[pscustomobject]@{SchemaVersion=2;Executable=$executableItem.FullName;ExecutableStamp=$stamp;Build=if($match.Success){$match.Groups[1].Value}else{''};SupportedFlags=Get-LocalAIServerFlagsFromHelp ($help.StdOut+"`n"+$help.StdErr);UpdatedAt=(Get-Date).ToString('o')}
     if($CachePath){$null=Write-LocalAIJsonAtomic -Path $CachePath -Value $value}
     return $value
 }

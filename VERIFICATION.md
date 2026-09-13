@@ -5,7 +5,7 @@ Verified on 2026-09-13 using Windows 11, Windows PowerShell 5.1.26100.9539, llam
 ## Fresh automated verification
 
 - PowerShell parser: **33 tracked files passed**, zero parse errors.
-- Offline test suite: **67 passed, 0 failed**.
+- Offline test suite: **73 passed, 0 failed**.
 - `local-ai.cmd` entry point: returned parseable JSON and `passed: true` from eight self-test invariants.
 - Git whitespace validation: passed.
 - Secret/path scan: no credentials or user-specific absolute source paths found in tracked v4 files.
@@ -33,6 +33,18 @@ The live checks used `C:\llamacpp` and `-DryRun`; they did not load a model or s
 - Repeated the plan as a real isolated load on port 18080. llama.cpp loaded the 5.75 GiB model on the RTX 4070; launcher health and exact served-alias verification passed.
 - Sent an actual OpenAI-compatible chat-completions request. The served model returned final content `LOCAL_AI_OK` with finish reason `stop`.
 - The launcher then stopped its owned server successfully. Pi, OMP, OpenCode, and Codex configuration targets were redirected under a disposable sandbox; normal user harness files were not edited.
+
+## Menu performance acceptance
+
+The installed model library contains seven GGUF entries. Timings on the reference machine before and after the cache fix:
+
+- Persisted discovery before: 10.5-11.5 seconds on every call.
+- Cold explicit discovery/rescan: approximately 12.35 seconds; this is expected because GGUF metadata is reread.
+- Unchanged persisted discovery after: approximately 20.8 milliseconds.
+- llama.cpp capability check before: approximately 260-310 milliseconds on every plan.
+- Unchanged capability check after: approximately 2.9 milliseconds.
+
+Hardware and classified model results are also retained for the lifetime of an interactive menu session. Cache invalidation tests cover direct model-root changes and new snapshots inside an existing Hugging Face repository.
 
 ## v3 integrity
 

@@ -68,3 +68,14 @@ Invoke-TestCase 'menu launch option invokes the interactive launch flow instead 
     Assert-True ($source -match "'1'\s*\{\s*Invoke-ControllerInteractiveLaunch")
     Assert-True ($source -notmatch 'Launch from any terminal with:')
 }
+
+Invoke-TestCase 'menu controller reuses one hardware probe for a session' {
+    $source=Get-Content -LiteralPath (Join-Path $script:ProjectRoot 'local-ai-v4.ps1') -Raw
+    Assert-True ($source -match 'function Get-ControllerMachine')
+    Assert-True ($source -match 'if\(\$script:Machine\)\{return \$script:Machine\}')
+}
+
+Invoke-TestCase 'menu controller reuses classified models until an explicit refresh' {
+    $source=Get-Content -LiteralPath (Join-Path $script:ProjectRoot 'local-ai-v4.ps1') -Raw
+    Assert-True ($source -match 'if\(\-not\$Refresh -and \$script:Models\)\{return @\(\$script:Models\)\}')
+}

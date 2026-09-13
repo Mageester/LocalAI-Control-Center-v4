@@ -32,3 +32,13 @@ Invoke-TestCase 'served model verification accepts the exact alias' {
     Import-TestModule Runtime
     Assert-True (Confirm-LocalAIModelList -ExpectedAlias 'alpha' -ModelIds @('beta','alpha'))
 }
+
+Invoke-TestCase 'unchanged server executable reuses capability cache' {
+    Import-TestModule Common;Import-TestModule Configuration;Import-TestModule Runtime
+    $exe=Join-Path $script:TestRoot 'fake-server.exe';[IO.File]::WriteAllBytes($exe,[byte[]](1,2,3))
+    $cache=Join-Path $script:TestRoot 'capabilities.json';$script:capabilityCalls=0
+    $runner={param($file,$arguments) $script:capabilityCalls++;if($arguments[0] -eq '--version'){[pscustomobject]@{ExitCode=0;StdOut='version: 10229';StdErr=''}}else{[pscustomobject]@{ExitCode=0;StdOut='--model --ctx-size';StdErr=''}}}
+    $null=Get-LocalAIServerCapabilities -Executable $exe -CachePath $cache -Runner $runner
+    $null=Get-LocalAIServerCapabilities -Executable $exe -CachePath $cache -Runner $runner
+    Assert-Equal 2 $script:capabilityCalls
+}

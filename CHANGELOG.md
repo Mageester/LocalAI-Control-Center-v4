@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.0.3 - 2026-09-13
+
+- Make persisted model discovery cache readable, with fast root signatures that invalidate when model roots or Hugging Face repository snapshots change.
+- Reuse discovered and classified models throughout one interactive menu session until an explicit rescan.
+- Reuse the stable hardware probe throughout one menu session.
+- Reuse llama.cpp capability results while the server executable path, size, and modification time remain unchanged.
+- Reduce measured unchanged discovery time on the reference library from roughly 11.5 seconds to 21 milliseconds.
+
 ## 4.0.2 - 2026-09-13
 
 - Replace the display-only Launch Model menu item with a numbered interactive model, task profile, and installed-harness workflow.

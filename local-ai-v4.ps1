@@ -34,6 +34,14 @@ if(-not $InstallRoot){$InstallRoot=$PSScriptRoot}
 Import-Module (Join-Path $PSScriptRoot 'LocalAI\LocalAI.psd1') -Force -DisableNameChecking -ErrorAction Stop
 $script:Paths=Get-LocalAIPaths -InstallRoot $InstallRoot -StateRoot $StateRoot
 $script:ShippedRoot=Join-Path $PSScriptRoot 'LocalAI'
+$script:Machine=$null
+$script:Models=$null
+
+function Get-ControllerMachine {
+    if($script:Machine){return $script:Machine}
+    $script:Machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+    return $script:Machine
+}
 
 function Write-ControllerResult {
     param($Value)
@@ -54,6 +62,7 @@ function Get-ControllerAdapters {
 
 function Get-ControllerModels {
     param([switch]$Refresh)
+    if(-not$Refresh -and $script:Models){return @($script:Models)}
     $settings=Get-ControllerSettings
     if($NoDefaultModelRoots) { $roots=@($ModelRoot) }
     else { $roots=@(Get-LocalAIModelRoots -InstallRoot $InstallRoot -Settings $settings)+@($ModelRoot) }
@@ -61,13 +70,14 @@ function Get-ControllerModels {
     $cachePath=if($DryRun){''}else{$script:Paths.Models}
     $models=@(Find-LocalAIModels -Roots $roots -CachePath $cachePath -Force:$Refresh)
     $overrides=(Read-LocalAIJson -Path (Join-Path $script:ShippedRoot 'Config\model-overrides.json')).overrides
-    $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+    $machine=Get-ControllerMachine
     foreach($entry in $models) {
         $fingerprint=Get-LocalAIHash -Text (@($entry.ResolvedPath,$entry.LogicalBytes,$entry.Architecture,$entry.NativeContext,$entry.Quantization)-join '|')
         $entry | Add-Member NoteProperty Fingerprint $fingerprint -Force
         $entry | Add-Member NoteProperty Classification (Get-LocalAIModelClassification -Model $entry -Machine $machine -Overrides $overrides) -Force
     }
-    return $models
+    $script:Models=@($models)
+    return @($script:Models)
 }
 
 function Get-ControllerRoots {
@@ -91,7 +101,7 @@ function Select-ControllerModel {
 function New-ControllerPlan {
     param([string]$Selection,[string]$Intent)
     $selected=Select-ControllerModel -Models @(Get-ControllerModels) -Selection $Selection
-    $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+    $machine=Get-ControllerMachine
     $benchmarkOverrides=@{}
     if(Test-Path -LiteralPath $script:Paths.Benchmarks -PathType Leaf){
         $store=Read-LocalAIJson -Path $script:Paths.Benchmarks
@@ -176,7 +186,7 @@ function Invoke-ControllerInteractiveLaunch {
 
 function Invoke-ControllerDoctor {
     $models=@(Get-ControllerModels)
-    $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+    $machine=Get-ControllerMachine
     $active=if(Test-Path -LiteralPath $script:Paths.Active){Read-LocalAIJson -Path $script:Paths.Active}else{$null}
     $contextObject=[pscustomobject]@{InstallRoot=[IO.Path]::GetFullPath($InstallRoot);StateRoot=$script:Paths.StateRoot;Models=$models;Machine=$machine;Adapters=@(Get-ControllerAdapters);ServerCapabilities=$null;ActiveState=$active}
     return @(Invoke-LocalAIDoctor -Context $contextObject -Live:$Live)
@@ -248,7 +258,7 @@ function Invoke-ControllerCommand {
             $bench=Join-Path $InstallRoot 'llama-bench.exe'
             $results=@(Invoke-LocalAIBenchmark -Candidates $candidates -Runner { param($candidate) Invoke-LocalAILlamaBenchCandidate -Candidate $candidate -Executable $bench })
             $winner=Select-LocalAIBenchmarkWinner -Results $results -Intent $Profile
-            $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+            $machine=Get-ControllerMachine
             $record=[pscustomobject]@{SchemaVersion=1;CreatedAt=(Get-Date).ToString('o');MachineFingerprint=Get-LocalAIMachineFingerprint $machine;ModelFingerprint=$plan.ModelFingerprint;Intent=$Profile;Winner=$winner;Results=$results}
             $null=Save-LocalAIBenchmarkRecord -Path $script:Paths.Benchmarks -Record $record
             return $record
@@ -271,7 +281,7 @@ function Invoke-ControllerCommand {
             $policy=Get-LocalAIClientPolicy -Context 131072;if($policy.AutoCompactThreshold -ne 98304){throw 'Client policy invariant failed.'};$checks++
             $adapters=@(Get-ControllerAdapters);if($adapters.Count -ne 5){throw 'Shipped adapter count invariant failed.'};$checks++
             foreach($adapter in $adapters){$null=Test-LocalAIHarnessAdapter -Adapter $adapter;$checks++}
-            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.2'}
+            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.3'}
         }
         default { throw "Unsupported command '$Name'." }
     }
@@ -279,7 +289,7 @@ function Invoke-ControllerCommand {
 
 function Invoke-ControllerMenu {
     while($true) {
-        $machine=Get-LocalAIMachine -LlamaRoot $InstallRoot
+        $machine=Get-ControllerMachine
         $models=@(Get-ControllerModels)
         $ready=@($models | Where-Object Status -eq 'Ready').Count
         $serverStatus=if(Test-Path -LiteralPath $script:Paths.Active){'Recorded'}else{'Stopped/Unknown'}

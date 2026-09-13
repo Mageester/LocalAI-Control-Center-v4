@@ -55,7 +55,7 @@ Find a model ID with `ListModels`, preview its authoritative launch plan, then l
 
 ## Model discovery and profiles
 
-Discovery scans the llama.cpp model folder, configured roots, and the Hugging Face cache. It resolves Hugging Face links, groups split GGUF shards, associates projectors, and identifies incomplete or ambiguous sets. Unknown future models are classified from metadata and naming evidence; known-model entries in `LocalAI\Config\model-overrides.json` are only a small tuning layer.
+Discovery scans the llama.cpp model folder, configured roots, and the Hugging Face cache. It resolves Hugging Face links, groups split GGUF shards, associates projectors, and identifies incomplete or ambiguous sets. A persisted root-signature cache makes unchanged launches fast and automatically invalidates when a model root or Hugging Face repository snapshot changes; **Models -> Rescan** remains the explicit refresh. Unknown future models are classified from metadata and naming evidence; known-model entries in `LocalAI\Config\model-overrides.json` are only a small tuning layer.
 
 Safe profiles are `Auto`, `CodingQuality`, `CodingFast`, `AgentLong`, `General`, `DeepReasoning`, `LongContext`, `Vision`, and `Expert`. A plan is bounded by native context, estimated memory headroom, detected server flags, and explicit overrides:
 

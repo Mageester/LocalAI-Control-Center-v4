@@ -57,11 +57,41 @@ function New-LocalAIModelRecord {
     }
 }
 
+function Get-LocalAIModelRootSignature {
+    param([Parameter(Mandatory)][string[]]$Roots)
+    $evidence=New-Object Collections.Generic.List[string]
+    foreach($root in @($Roots|Select-Object -Unique)){
+        $full=[IO.Path]::GetFullPath($root);$evidence.Add($full)
+        if(-not(Test-Path -LiteralPath $full -PathType Container)){$evidence.Add('<missing>');continue}
+        $rootItem=Get-Item -LiteralPath $full -Force;$evidence.Add([string]$rootItem.LastWriteTimeUtc.Ticks)
+        foreach($item in @(Get-ChildItem -LiteralPath $full -Force -ErrorAction SilentlyContinue|Sort-Object FullName)){
+            $length=if($item.PSIsContainer){0}else{[long]$item.Length}
+            $evidence.Add(('{0}|{1}|{2}|{3}' -f $item.Name,$item.PSIsContainer,$item.LastWriteTimeUtc.Ticks,$length))
+            if($item.PSIsContainer){
+                foreach($child in @(Get-ChildItem -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue|Sort-Object FullName)){
+                    $childLength=if($child.PSIsContainer){0}else{[long]$child.Length}
+                    $evidence.Add(('{0}\{1}|{2}|{3}|{4}' -f $item.Name,$child.Name,$child.PSIsContainer,$child.LastWriteTimeUtc.Ticks,$childLength))
+                }
+            }
+        }
+    }
+    return Get-LocalAIHash -Text ($evidence -join [char]31)
+}
+
 function Find-LocalAIModels {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string[]]$Roots,[string]$CachePath='',[switch]$Force)
+    $normalizedRoots=@($Roots|Where-Object{$_}|ForEach-Object{[IO.Path]::GetFullPath($_)}|Select-Object -Unique)
+    $rootSignature=Get-LocalAIModelRootSignature -Roots $normalizedRoots
+    if(-not$Force -and $CachePath -and (Test-Path -LiteralPath $CachePath -PathType Leaf)){
+        try{
+            $cached=Read-LocalAIJson -Path $CachePath
+            $cachedRoots=@($cached.roots|ForEach-Object{[string]$_})
+            if([int]$cached.schemaVersion -eq 2 -and [string]$cached.rootSignature -ceq $rootSignature -and (($cachedRoots -join [char]31) -ceq ($normalizedRoots -join [char]31))){return @($cached.models)}
+        }catch{}
+    }
     $files=New-Object Collections.Generic.List[IO.FileInfo]
-    foreach($root in @($Roots | Select-Object -Unique)){
+    foreach($root in $normalizedRoots){
         if(-not(Test-Path -LiteralPath $root -PathType Container)){continue}
         try{
             foreach($file in @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter '*.gguf' -ErrorAction SilentlyContinue)){
@@ -90,7 +120,7 @@ function Find-LocalAIModels {
         }
     }
     if($CachePath){
-        $cache=[pscustomobject]@{schemaVersion=1;updatedAt=(Get-Date).ToString('o');models=$records.ToArray()}
+        $cache=[pscustomobject]@{schemaVersion=2;updatedAt=(Get-Date).ToString('o');roots=$normalizedRoots;rootSignature=$rootSignature;models=$records.ToArray()}
         $null=Write-LocalAIJsonAtomic -Path $CachePath -Value $cache
     }
     return $records.ToArray()
