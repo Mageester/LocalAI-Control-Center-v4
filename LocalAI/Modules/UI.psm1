@@ -83,6 +83,83 @@ function Show-LocalAIModelTable {
     $Models | Select-Object Id,Status,Kind,Name,Architecture,@{N='Context';E={$_.NativeContext}},@{N='GiB';E={[math]::Round($_.LogicalBytes/1GB,2)}},Quantization | Format-Table -AutoSize -Wrap
 }
 
+function Select-LocalAIModelInteractive {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][object[]]$Models,
+        [scriptblock]$ReadInput={Read-Host 'Select model'},
+        [scriptblock]$WriteOutput={param($Text) Write-Host $Text}
+    )
+    $choices=@($Models|Where-Object{$_.Kind -eq 'MainModel' -and $_.Status -eq 'Ready'})
+    if($choices.Count -eq 0){& $WriteOutput 'No ready main GGUF model is available.';return $null}
+    & $WriteOutput '';& $WriteOutput 'READY MODELS'
+    for($i=0;$i -lt $choices.Count;$i++){
+        $model=$choices[$i];$gib=[math]::Round([double]$model.LogicalBytes/1GB,2);$architecture=if($model.PSObject.Properties['Architecture']){$model.Architecture}else{'unknown'}
+        & $WriteOutput (' [{0}] {1} | {2} | {3:N0} ctx | {4} GiB' -f ($i+1),$model.Name,$architecture,[long]$model.NativeContext,$gib)
+    }
+    & $WriteOutput ' [B] Back'
+    $allowed=@(1..$choices.Count|ForEach-Object{[string]$_})+@('B')
+    $selection=Read-LocalAIChoice -Allowed $allowed -ReadInput $ReadInput -WriteOutput $WriteOutput
+    if($selection -eq 'B'){return $null}
+    return $choices[[int]$selection-1]
+}
+
+function Select-LocalAIProfileInteractive {
+    [CmdletBinding()]
+    param(
+        [scriptblock]$ReadInput={Read-Host 'Select profile'},
+        [scriptblock]$WriteOutput={param($Text) Write-Host $Text}
+    )
+    $profiles=@(
+        [pscustomobject]@{Id='Auto';Label='Automatic safe default'},
+        [pscustomobject]@{Id='CodingQuality';Label='Coding - maximum quality'},
+        [pscustomobject]@{Id='CodingFast';Label='Coding - fast'},
+        [pscustomobject]@{Id='AgentLong';Label='Agentic long-running work'},
+        [pscustomobject]@{Id='General';Label='General assistant'},
+        [pscustomobject]@{Id='DeepReasoning';Label='Deep reasoning'},
+        [pscustomobject]@{Id='LongContext';Label='Largest safe context'},
+        [pscustomobject]@{Id='Vision';Label='Vision'},
+        [pscustomobject]@{Id='Expert';Label='Manual expert controls'}
+    )
+    & $WriteOutput '';& $WriteOutput 'TASK PROFILE'
+    for($i=0;$i -lt $profiles.Count;$i++){& $WriteOutput (' [{0}] {1}' -f ($i+1),$profiles[$i].Label)}
+    & $WriteOutput ' [B] Back'
+    $allowed=@(1..$profiles.Count|ForEach-Object{[string]$_})+@('B')
+    $selection=Read-LocalAIChoice -Allowed $allowed -ReadInput $ReadInput -WriteOutput $WriteOutput
+    if($selection -eq 'B'){return $null}
+    return [string]$profiles[[int]$selection-1].Id
+}
+
+function Select-LocalAIHarnessInteractive {
+    [CmdletBinding()]
+    param(
+        [object[]]$Statuses=@(),
+        [scriptblock]$ReadInput={Read-Host 'Select target'},
+        [scriptblock]$WriteOutput={param($Text) Write-Host $Text}
+    )
+    $choices=@([pscustomobject]@{Id='Server';DisplayName='Server only'})+@($Statuses|Where-Object Installed)
+    & $WriteOutput '';& $WriteOutput 'LAUNCH TARGET'
+    for($i=0;$i -lt $choices.Count;$i++){& $WriteOutput (' [{0}] {1}' -f ($i+1),$choices[$i].DisplayName)}
+    & $WriteOutput ' [B] Back'
+    $allowed=@(1..$choices.Count|ForEach-Object{[string]$_})+@('B')
+    $selection=Read-LocalAIChoice -Allowed $allowed -ReadInput $ReadInput -WriteOutput $WriteOutput
+    if($selection -eq 'B'){return $null}
+    return [string]$choices[[int]$selection-1].Id
+}
+
+function Confirm-LocalAIInteractiveAction {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Prompt,
+        [scriptblock]$ReadInput={param($Text) Read-Host $Text},
+        [scriptblock]$WriteOutput={param($Text) Write-Host $Text}
+    )
+    $answer=[string](& $ReadInput "$Prompt [y/N]")
+    if($answer.Trim() -ieq 'y'){return $true}
+    & $WriteOutput 'Cancelled. Nothing was started or changed.'
+    return $false
+}
+
 function Show-LocalAIDoctorResults {
     [CmdletBinding()]
     param([Parameter(Mandatory)][object[]]$Results)

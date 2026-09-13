@@ -5,7 +5,7 @@ Verified on 2026-09-13 using Windows 11, Windows PowerShell 5.1.26100.9539, llam
 ## Fresh automated verification
 
 - PowerShell parser: **33 tracked files passed**, zero parse errors.
-- Offline test suite: **62 passed, 0 failed**.
+- Offline test suite: **67 passed, 0 failed**.
 - `local-ai.cmd` entry point: returned parseable JSON and `passed: true` from eight self-test invariants.
 - Git whitespace validation: passed.
 - Secret/path scan: no credentials or user-specific absolute source paths found in tracked v4 files.
@@ -26,6 +26,14 @@ The live checks used `C:\llamacpp` and `-DryRun`; they did not load a model or s
 - Dry harness previews left the existing Pi model/settings files and OMP model file byte-for-byte unchanged.
 - A disposable side-by-side install/uninstall smoke test passed: manifest created, installed self-test passed, v3 hash remained unchanged, v3 remained after uninstall, and the v4 entry point was removed.
 
+## Interactive and real inference acceptance
+
+- Exercised the actual terminal menu against live discovery: `Launch Model` -> numbered Qwen3.5 9B -> Automatic safe default -> Server only.
+- The menu rendered the full 65,536-context plan, asked `Load this model now? [y/N]`, accepted `N`, made no change, and returned to the main menu.
+- Repeated the plan as a real isolated load on port 18080. llama.cpp loaded the 5.75 GiB model on the RTX 4070; launcher health and exact served-alias verification passed.
+- Sent an actual OpenAI-compatible chat-completions request. The served model returned final content `LOCAL_AI_OK` with finish reason `stop`.
+- The launcher then stopped its owned server successfully. Pi, OMP, OpenCode, and Codex configuration targets were redirected under a disposable sandbox; normal user harness files were not edited.
+
 ## v3 integrity
 
 The following three SHA-256 values matched exactly:
@@ -40,7 +48,6 @@ Hash: `7DF0128DD21B9A2C2A8BB85B00CDE245C9FB2CB671408390B73FC8B8668BD20D`
 
 These actions require explicit consent or external credentials/resources and were not needed to validate the package safely:
 
-- Real CUDA model load or inference response
 - Full multi-candidate benchmark/autotune run
 - Network model download
 - Harness installation

@@ -35,7 +35,7 @@ See [MIGRATION.md](MIGRATION.md) for migration, rollback, and uninstall details.
 
 ## First use
 
-The menu is designed for normal use. The command interface makes every operation scriptable and testable:
+The menu is designed for normal use. Choose **Launch Model** for numbered model, profile, and installed-harness selection, or **Smart Task Launcher** to choose the task first. Both render the validated plan and require an explicit `Y` before loading. The command interface makes every operation scriptable and testable:
 
 ```powershell
 .\local-ai.cmd -Command Doctor
@@ -121,7 +121,7 @@ Doctor reports pass/warn/fail findings without repairing the system. Live checks
 
 ## State and customization
 
-Machine-local state defaults to `%LOCALAPPDATA%\LocalAIControlCenter`. It contains settings, discovery cache, benchmark records, logs, backups, and active-server state. Override it with `-StateRoot` for portable or test use.
+Machine-local state defaults to `%USERPROFILE%\.local-ai-control\v4`. It contains settings, discovery cache, benchmark records, logs, backups, and active-server state. Override it with `-StateRoot` for portable or test use.
 
 Edit user settings, not shipped files, when adding model roots. The merged settings schema is based on `LocalAI\Config\defaults.json`. All harnesses receive the same server endpoint, model alias, context window, output allowance, and compaction threshold derived from the selected launch plan.
 

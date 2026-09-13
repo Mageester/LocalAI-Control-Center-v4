@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.0.2 - 2026-09-13
+
+- Replace the display-only Launch Model menu item with a numbered interactive model, task profile, and installed-harness workflow.
+- Make Smart Task Launcher use the same verified workflow with task-first selection.
+- Exclude projector sidecars and invalid models from interactive launch choices.
+- Render the complete validated plan and require explicit confirmation before loading a model.
+
 ## 4.0.1 - 2026-09-13
 
 - Reapply an eligible benchmark winner only when its machine, llama.cpp build, model fingerprint, and task intent match exactly; explicit user tuning still takes precedence.

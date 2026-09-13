@@ -112,12 +112,13 @@ function New-ControllerPlan {
 }
 
 function Invoke-ControllerLaunch {
-    $plan=New-ControllerPlan -Selection $Model -Intent $Profile
+    param([string]$Selection=$Model,[string]$Intent=$Profile,[string]$TargetHarness=$Harness)
+    $plan=New-ControllerPlan -Selection $Selection -Intent $Intent
     if($DryRun) { return $plan }
     $selectedAdapter=$null
-    if($Harness -and $Harness -notin @('None','Server')) {
-        $selectedAdapter=Get-ControllerAdapters | Where-Object id -eq $Harness | Select-Object -First 1
-        if(-not $selectedAdapter) { throw "Unknown harness '$Harness'." }
+    if($TargetHarness -and $TargetHarness -notin @('None','Server')) {
+        $selectedAdapter=Get-ControllerAdapters | Where-Object id -eq $TargetHarness | Select-Object -First 1
+        if(-not $selectedAdapter) { throw "Unknown harness '$TargetHarness'." }
         $status=Get-LocalAIHarnessStatus $selectedAdapter
         if(-not $status.Installed) { throw "$($selectedAdapter.displayName) is not installed; install it before loading a model." }
     }
@@ -130,7 +131,7 @@ function Invoke-ControllerLaunch {
         $configs=[ordered]@{}
         foreach($adapter in Get-ControllerAdapters) {
             $status=Get-LocalAIHarnessStatus $adapter
-            if(-not $status.Installed -and $adapter.id -ne $Harness) { continue }
+            if(-not $status.Installed -and $adapter.id -ne $TargetHarness) { continue }
             $configuration=Get-LocalAIHarnessConfiguration -Adapter $adapter -Plan $plan -StateRoot $script:Paths.StateRoot
             $configs[$adapter.id]=Set-LocalAIHarnessConfiguration -Adapter $adapter -Configuration $configuration -BackupSession $session
         }
@@ -145,6 +146,32 @@ function Invoke-ControllerLaunch {
         if($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
         throw
     }
+}
+
+function Invoke-ControllerInteractiveLaunch {
+    param([Parameter(Mandatory)][object[]]$AvailableModels,[switch]$TaskFirst)
+    $selectedModel=$null;$selectedProfile=''
+    if($TaskFirst){
+        $selectedProfile=Select-LocalAIProfileInteractive
+        if(-not$selectedProfile){return}
+        $selectedModel=Select-LocalAIModelInteractive -Models $AvailableModels
+    }else{
+        $selectedModel=Select-LocalAIModelInteractive -Models $AvailableModels
+        if($null -eq $selectedModel){return}
+        $selectedProfile=Select-LocalAIProfileInteractive
+    }
+    if($null -eq $selectedModel -or -not$selectedProfile){return}
+    $statuses=@(Get-ControllerAdapters|ForEach-Object{Get-LocalAIHarnessStatus $_})
+    $selectedHarness=Select-LocalAIHarnessInteractive -Statuses $statuses
+    if(-not$selectedHarness){return}
+    $plan=New-ControllerPlan -Selection $selectedModel.Id -Intent $selectedProfile
+    Write-Host ''
+    Show-LocalAIPlan -Plan $plan
+    Write-Host ''
+    if(-not(Confirm-LocalAIInteractiveAction -Prompt 'Load this model now?')){return}
+    $result=Invoke-ControllerLaunch -Selection $selectedModel.Id -Intent $selectedProfile -TargetHarness $selectedHarness
+    Write-Host ''
+    Write-Host ("READY: {0} at {1}" -f $result.Plan.Alias,$result.Plan.ServerBaseUrl) -ForegroundColor Green
 }
 
 function Invoke-ControllerDoctor {
@@ -244,7 +271,7 @@ function Invoke-ControllerCommand {
             $policy=Get-LocalAIClientPolicy -Context 131072;if($policy.AutoCompactThreshold -ne 98304){throw 'Client policy invariant failed.'};$checks++
             $adapters=@(Get-ControllerAdapters);if($adapters.Count -ne 5){throw 'Shipped adapter count invariant failed.'};$checks++
             foreach($adapter in $adapters){$null=Test-LocalAIHarnessAdapter -Adapter $adapter;$checks++}
-            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.1'}
+            return [pscustomobject]@{passed=$true;checks=$checks;powerShell=$PSVersionTable.PSVersion.ToString();version='4.0.2'}
         }
         default { throw "Unsupported command '$Name'." }
     }
@@ -260,8 +287,8 @@ function Invoke-ControllerMenu {
         $choice=Show-LocalAIMainMenu
         if($choice -eq 'Q'){return}
         switch($choice) {
-            '1' { Show-LocalAIModelTable -Models $models;Write-Host '';Write-Host 'Launch from any terminal with:' -ForegroundColor Cyan;Write-Host '.\local-ai.cmd -Command Launch -Model <model-id> -Profile Auto -Harness Server' }
-            '2' { Write-Host 'Choose a task profile, then use Launch Model:';Write-Host 'CodingQuality | CodingFast | AgentLong | General | DeepReasoning | LongContext | Vision' }
+            '1' { Invoke-ControllerInteractiveLaunch -AvailableModels $models }
+            '2' { Invoke-ControllerInteractiveLaunch -AvailableModels $models -TaskFirst }
             '3' { Show-LocalAIModelTable -Models $models }
             '4' { Invoke-ControllerCommand -Name Harnesses | Format-Table -AutoSize | Out-Host }
             '5' { Write-Host '.\local-ai.cmd -Command Benchmark -Model <model-id> -Profile CodingFast -Confirm' }

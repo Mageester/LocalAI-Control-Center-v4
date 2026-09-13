@@ -1,6 +1,6 @@
 @{
     RootModule=''
-    ModuleVersion='4.0.1'
+    ModuleVersion='4.0.2'
     GUID='80ef332e-64a3-4cf9-b6e5-2a6c762c5c15'
     Author='Local AI Control Center'
     CompanyName='Community'

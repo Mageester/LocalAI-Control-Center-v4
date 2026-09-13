@@ -62,3 +62,9 @@ Invoke-TestCase 'Plan reuses an applicable stored machine and model benchmark' {
     Assert-Equal 'q4_0' $applied.KV
     Assert-Equal 'benchmark' $applied.Provenance.Context
 }
+
+Invoke-TestCase 'menu launch option invokes the interactive launch flow instead of printing a recipe' {
+    $source=Get-Content -LiteralPath (Join-Path $script:ProjectRoot 'local-ai-v4.ps1') -Raw
+    Assert-True ($source -match "'1'\s*\{\s*Invoke-ControllerInteractiveLaunch")
+    Assert-True ($source -notmatch 'Launch from any terminal with:')
+}

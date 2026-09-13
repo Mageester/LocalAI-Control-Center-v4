@@ -90,4 +90,4 @@ C:\llamacpp\Uninstall-LocalAI.ps1 -Destination C:\llamacpp
 
 The uninstaller reads the install manifest and removes only unchanged v4-owned files. It refuses to remove an installed v4 file whose hash changed, so user edits are preserved for manual review. It always preserves v3, models, logs, and machine-local state.
 
-To remove machine-local v4 state later, review `%LOCALAPPDATA%\LocalAIControlCenter` and delete it manually only after confirming its backups and benchmark records are no longer needed.
+To remove machine-local v4 state later, review `%USERPROFILE%\.local-ai-control\v4` and delete it manually only after confirming its backups and benchmark records are no longer needed.
