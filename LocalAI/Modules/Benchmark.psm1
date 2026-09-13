@@ -67,11 +67,17 @@ function Save-LocalAIBenchmarkRecord {
     return $Record
 }
 
+function New-LocalAILlamaBenchArguments {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$Candidate)
+    return @('-m',$Candidate.ModelPath,'-p','512','-n','128','-b',[string]$Candidate.Batch,'-ub',[string]$Candidate.UBatch,'-t',[string]$Candidate.Threads,'-fa','on','-ctk',$Candidate.KV,'-ctv',$Candidate.KV,'-o','jsonl')
+}
+
 function Invoke-LocalAILlamaBenchCandidate {
     [CmdletBinding()]
     param([Parameter(Mandatory)]$Candidate,[Parameter(Mandatory)][string]$Executable)
     if(-not(Test-Path -LiteralPath $Executable -PathType Leaf)){throw "llama-bench is missing: $Executable"}
-    $arguments=@('-m',$Candidate.ModelPath,'-p','512','-n','128','-b',[string]$Candidate.Batch,'-ub',[string]$Candidate.UBatch,'-t',[string]$Candidate.Threads,'-fa','1','-ctk',$Candidate.KV,'-ctv',$Candidate.KV,'-o','jsonl')
+    $arguments=@(New-LocalAILlamaBenchArguments -Candidate $Candidate)
     $si=New-Object Diagnostics.ProcessStartInfo;$si.FileName=$Executable;$si.Arguments=($arguments|ForEach-Object{ConvertTo-LocalAIWindowsArgument $_})-join ' ';$si.UseShellExecute=$false;$si.CreateNoWindow=$true;$si.RedirectStandardOutput=$true;$si.RedirectStandardError=$true
     $p=New-Object Diagnostics.Process;$p.StartInfo=$si
     try{

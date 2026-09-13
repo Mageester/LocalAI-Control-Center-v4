@@ -14,6 +14,15 @@ Invoke-TestCase 'autotune candidate matrix is bounded and unique' {
     Assert-Equal $c.Count @($c|ForEach-Object CandidateId|Select-Object -Unique).Count
 }
 
+Invoke-TestCase 'llama bench arguments use build 10229 flash attention values' {
+    Import-TestModule Benchmark
+    $candidate=(New-LocalAIBenchmarkMatrix -BasePlan (New-BenchmarkTestPlan) -Intent CodingFast)[0]
+    $arguments=@(New-LocalAILlamaBenchArguments -Candidate $candidate)
+    $index=[array]::IndexOf($arguments,'-fa')
+    Assert-True ($index -ge 0)
+    Assert-Equal 'on' $arguments[$index+1]
+}
+
 Invoke-TestCase 'different machine fingerprint makes benchmark inapplicable' {
     Import-TestModule Benchmark
     $record=[pscustomobject]@{MachineFingerprint='old';ModelFingerprint='model-fp';Intent='CodingFast';Winner=[pscustomobject]@{CandidateId='a'}}
