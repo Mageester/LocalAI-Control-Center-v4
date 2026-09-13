@@ -9,7 +9,8 @@
     PowerShellVersion='5.1'
     NestedModules=@(
         'Modules\Common.psm1',
-        'Modules\Configuration.psm1'
+        'Modules\Configuration.psm1',
+        'Modules\Gguf.psm1'
     )
     FunctionsToExport='*'
     CmdletsToExport=@()
