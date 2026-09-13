@@ -1,0 +1,6 @@
+.worktrees/
+artifacts/
+doctor.json
+test-results.json
+*.tmp
+*.zip
