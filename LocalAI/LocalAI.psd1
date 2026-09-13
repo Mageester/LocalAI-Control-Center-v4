@@ -15,7 +15,8 @@
         'Modules\Discovery.psm1',
         'Modules\Profiles.psm1',
         'Modules\Runtime.psm1',
-        'Modules\Harnesses.psm1'
+        'Modules\Harnesses.psm1',
+        'Modules\Downloads.psm1'
     )
     FunctionsToExport='*'
     CmdletsToExport=@()
