@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "overrides": [
+    {"id":"qwen35moe","match":{"architecture":"qwen35moe"},"values":{"family":"moe","temperature":0.6,"topP":0.95,"topK":20,"roles":["Coding","Agentic","Reasoning"]}},
+    {"id":"qwen35","match":{"architecture":"qwen35"},"values":{"family":"dense","temperature":0.6,"topP":0.95,"topK":20,"roles":["Coding","General","Vision"]}},
+    {"id":"gemma4","match":{"architecture":"gemma4"},"values":{"family":"gemma","temperature":1.0,"topP":0.95,"topK":64,"roles":["General","Vision"]}}
+  ]
+}

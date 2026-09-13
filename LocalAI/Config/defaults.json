@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "modelRoots": [],
+  "defaultPort": 8080,
+  "defaultProfile": "Auto",
+  "refreshSeconds": 2,
+  "serverReadyTimeoutSeconds": 180,
+  "minimumVramHeadroomMiB": 1024,
+  "minimumSystemRamHeadroomMiB": 4096
+}

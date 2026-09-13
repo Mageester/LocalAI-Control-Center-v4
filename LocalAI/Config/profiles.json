@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {"id":"Auto","label":"Automatic safe default","contextTarget":65536,"kv":"q8_0","batch":2048,"ubatch":512,"fitTargetMiB":1024},
+    {"id":"CodingQuality","label":"Coding - maximum quality","contextTarget":131072,"kv":"q8_0","batch":2048,"ubatch":512,"fitTargetMiB":1280},
+    {"id":"CodingFast","label":"Coding - fast","contextTarget":32768,"kv":"q8_0","batch":2048,"ubatch":1024,"fitTargetMiB":1024},
+    {"id":"AgentLong","label":"Agentic long-running work","contextTarget":131072,"kv":"q8_0","batch":2048,"ubatch":512,"fitTargetMiB":1536},
+    {"id":"General","label":"General assistant","contextTarget":65536,"kv":"q8_0","batch":1024,"ubatch":512,"fitTargetMiB":1024},
+    {"id":"DeepReasoning","label":"Deep reasoning","contextTarget":131072,"kv":"q8_0","batch":1024,"ubatch":512,"fitTargetMiB":1536},
+    {"id":"LongContext","label":"Largest safe context","contextTarget":262144,"kv":"q4_0","batch":1024,"ubatch":512,"fitTargetMiB":1536},
+    {"id":"Vision","label":"Vision","contextTarget":65536,"kv":"q8_0","batch":1024,"ubatch":512,"fitTargetMiB":2048},
+    {"id":"Expert","label":"Manual expert controls","contextTarget":65536,"kv":"q8_0","batch":1024,"ubatch":512,"fitTargetMiB":1536}
+  ]
+}
